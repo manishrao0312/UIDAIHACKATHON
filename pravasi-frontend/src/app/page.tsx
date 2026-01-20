@@ -60,7 +60,7 @@ export default function PravasiDashboard() {
 
   useEffect(() => {
     setIsMounted(true);
-    fetch('https://uidaihackathon.onrender.com')
+    fetch('http://127.0.0.1:8000/api/migration-data')
       .then(res => res.json())
       .then(json => setData(json))
       .catch(err => console.error("Backend offline:", err));
