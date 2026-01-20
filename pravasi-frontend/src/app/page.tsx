@@ -9,14 +9,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Activity, AlertTriangle, Map as MapIcon, TrendingUp, Users, ShieldAlert } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
-/**
- * FIX 1: Dynamic Import with ssr:false
- * This prevents the 'maxTextureDimension2D' error by ensuring the Deck.gl engine 
- * is only loaded in the browser environment.
- */
+// 1. Force DeckGL to be Client-Side Only
 const DeckGL = dynamic(() => import('@deck.gl/react'), { 
   ssr: false,
-  loading: () => <div className="h-screen w-screen bg-[#020617] flex items-center justify-center text-cyan-500 font-mono italic">INITIALIZING CYBER ENGINE...</div>
+  loading: () => <div className="h-screen w-screen bg-[#020617] flex items-center justify-center text-cyan-500 font-mono">INITIALIZING GPU ENGINE...</div>
 });
 
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json';
@@ -47,10 +43,7 @@ const AlertItem = ({ district, msg }: any) => (
 );
 
 export default function PravasiDashboard() {
-  /**
-   * FIX 2: Mounting Guard
-   * Prevents hydration mismatches between server-rendered HTML and client WebGL.
-   */
+  // 2. Mounting Guard to prevent SSR/Hydration mismatches
   const [isMounted, setIsMounted] = useState(false);
   const [data, setData] = useState<any>(null);
   const [sliderValue, setSliderValue] = useState(75);
@@ -60,13 +53,14 @@ export default function PravasiDashboard() {
 
   useEffect(() => {
     setIsMounted(true);
-    fetch('https://uidaihackathon-1.onrender.com')
+    // Use the absolute URL of your deployed backend
+    fetch('https://uidaihackathon-1.onrender.com/api/migration-data')
       .then(res => res.json())
       .then(json => setData(json))
       .catch(err => console.error("Backend offline:", err));
   }, []);
 
-  // OPTIMIZATION: Memoize data slicing to keep the slider smooth
+  // 3. Memoize data and layers to improve performance and prevent lag
   const filteredData = useMemo(() => {
     if (!data?.historical) return [];
     const totalCount = data.historical.length;
@@ -74,7 +68,6 @@ export default function PravasiDashboard() {
     return data.historical.slice(0, limit);
   }, [data, sliderValue]);
 
-  // OPTIMIZATION: Memoize layers array to prevent unnecessary re-renders of the map
   const layers = useMemo(() => [
     new ScatterplotLayer({
       id: 'dest-points',
@@ -95,20 +88,18 @@ export default function PravasiDashboard() {
     })
   ], [filteredData]);
 
+  // Final render guard
   if (!isMounted) return <div className="h-screen w-screen bg-[#020617]" />;
 
   return (
     <div className="h-screen w-screen bg-[#020617] text-slate-200 font-sans overflow-hidden relative">
-      {/* --- HEADER --- */}
-      <header className="absolute top-0 left-0 w-full z-30 p-6 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent">
+      <header className="absolute top-0 left-0 w-full z-30 p-6 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent text-white">
         <div className="flex items-center gap-3">
-          <div className="bg-cyan-500 p-2 rounded-lg shadow-[0_0_20px_rgba(6,182,212,0.4)]">
+          <div className="bg-cyan-500 p-2 rounded-lg shadow-[0_0_15px_rgba(34,211,238,0.4)]">
             <Activity className="text-black" size={24} />
           </div>
           <div>
-            <h1 className="text-2xl font-black tracking-tighter text-white uppercase">
-              PRAVASI <span className="text-cyan-500 text-sm font-mono ml-2 lowercase font-normal italic">v1.0-ai</span>
-            </h1>
+            <h1 className="text-2xl font-black uppercase">PRAVASI <span className="text-cyan-500 text-sm lowercase font-normal italic">v1.0-ai</span></h1>
             <p className="text-[10px] text-slate-500 font-mono uppercase tracking-[0.2em]">UIDAI Migration Intelligence Engine</p>
           </div>
         </div>
@@ -117,22 +108,18 @@ export default function PravasiDashboard() {
         </div>
       </header>
 
-      {/* --- AI ENGINE OVERLAY --- */}
       <AnimatePresence>
         {sliderValue > 85 && (
           <motion.div 
             initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
-            className="absolute top-24 left-1/2 -translate-x-1/2 z-40 bg-cyan-500/10 border border-cyan-500/50 backdrop-blur-md px-6 py-3 rounded-full flex items-center gap-3 shadow-[0_0_30px_rgba(34,211,238,0.3)]"
+            className="absolute top-24 left-1/2 -translate-x-1/2 z-40 bg-cyan-500/10 border border-cyan-500/50 backdrop-blur-md px-6 py-3 rounded-full flex items-center gap-3 shadow-[0_0_20px_rgba(34,211,238,0.3)]"
           >
             <ShieldAlert className="text-cyan-400 animate-pulse" size={20} />
-            <span className="text-cyan-400 font-mono text-xs font-bold uppercase tracking-widest">
-              XGBoost Predictive Engine Active: Q1 2026 Projections
-            </span>
+            <span className="text-cyan-400 font-mono text-xs font-bold uppercase tracking-widest italic text-center">XGBoost Predictive Engine Engaged</span>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* --- SIDEBARS --- */}
       <aside className="absolute top-24 left-6 z-20 w-80">
         <StatCard title="Total Migration Events" value="12,842" trend="+14.2%" icon={Users} color="text-cyan-400" />
         <StatCard title="Predicted Inflow (Q1)" value="45,200" trend="+22.1%" icon={TrendingUp} color="text-pink-500" />
@@ -153,7 +140,6 @@ export default function PravasiDashboard() {
          </div>
       </aside>
 
-      {/* --- MAIN MAP CANVAS --- */}
       <div className="absolute inset-0 z-10">
         <DeckGL
           initialViewState={viewState}
@@ -172,16 +158,15 @@ export default function PravasiDashboard() {
         </DeckGL>
       </div>
 
-      {/* --- TIMELINE FOOTER --- */}
       <footer className="absolute bottom-10 left-1/2 -translate-x-1/2 z-30 w-full max-w-xl px-4 text-center font-mono">
         <div className="bg-slate-900/90 backdrop-blur-2xl border border-slate-700 p-4 rounded-full flex flex-col items-center shadow-2xl">
             <input 
                 type="range" className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400" 
                 min="0" max="100" value={sliderValue} onChange={(e) => setSliderValue(Number(e.target.value))}
             />
-            <div className="flex justify-between w-full mt-3 px-2 text-[10px] text-slate-500 uppercase tracking-widest font-bold">
+            <div className="flex justify-between w-full mt-3 px-2 text-[10px] font-mono text-slate-500 uppercase tracking-widest font-bold">
                 <span>Dec 2024</span>
-                <span className="text-cyan-400 border-b border-cyan-400/30 pb-0.5">
+                <span className="text-cyan-400 border-b border-cyan-400/30 pb-0.5 tracking-normal">
                   {sliderValue > 85 ? "AI FORECAST ACTIVE" : "HISTORICAL VIEW"}
                 </span>
                 <span>Q2 2026</span>
