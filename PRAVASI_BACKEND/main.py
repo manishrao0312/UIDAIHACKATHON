@@ -7,14 +7,19 @@ app = FastAPI(title="PRAVASI AI Engine")
 
 # This allows your React frontend (usually on port 5173 or 3000) 
 # to talk to this Python backend.
+# PRAVASI_BACKEND/main.py
+
+# PRAVASI_BACKEND/main.py
+
 origins = [
-    "http://localhost:3000", # Local testing
-    "https://uidaihackathon-lzm9.vercel.app", # Your live frontend
+    "http://localhost:3000",
+    "https://uidaihackathon.vercel.app",  # YOUR LIVE FRONTEND
+    "https://uidaihackathon-lzm9.vercel.app", # BACKUP FRONTEND
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins, # This list is critical
+    allow_origins=origins, 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
